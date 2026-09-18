@@ -27,7 +27,7 @@
     <label>Email Address<input id="loginEmail" type="email" placeholder="admin@example.com"></label>
     <label>Password<input id="loginPassword" type="password" placeholder="••••••••"></label>
     <button class="primary" id="loginBtn">Sign In</button>
-    <div id="authStatus" class="status" style="color: #ff6b6b;"></div>
+    <div id="authStatus" class="status" style="color: #ff6b6b; margin-top: 12px; font-weight: 500;"></div>
   </div>
 
   <!-- UPLOAD SECTION (HIDDEN BY DEFAULT) -->
@@ -64,34 +64,41 @@
 <script>
 // ==========================================
 // 1. SUPABASE CONFIGURATION
-// আপনার Supabase Project Settings > API থেকে URL এবং Anon Key বসান
 // ==========================================
 const SUPABASE_URL = "https://mndaaidwihvfggqqxnld.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uZGFhaWR3aWh2ZmdncXF4bmxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3MTI3NzAsImV4cCI6MjEwNTI4ODc3MH0.Es5uOvT0GXpCC3kgiVepHBfN3wsS6GTigvwGo0rnyuw";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Lockout Tracking Variables
+// Variable declaration
+let supabaseClient = null;
+
+if (window.supabase) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+  console.error("Supabase SDK failed to load.");
+}
+
+// Lockout Tracking Keys
 const LOCK_KEY = "dh_admin_lockout_until";
 const ATTEMPTS_KEY = "dh_admin_failed_attempts";
 
-// Initialize UI Elements
 const authSection = document.getElementById("authSection");
 const adminContent = document.getElementById("adminContent");
 const authStatus = document.getElementById("authStatus");
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 
-// Check Lockout Status on Load
+// Page load
 checkLockout();
 
-// Check if user is already logged in
-supabaseClient.auth.getSession().then(({ data: { session } }) => {
-  if (session) {
-    showAdminPanel();
-  }
-});
+if (supabaseClient) {
+  supabaseClient.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      showAdminPanel();
+    }
+  });
+}
 
-// Login Event Listener
+// Login click handler
 loginBtn.onclick = async () => {
   if (checkLockout()) return;
 
@@ -99,6 +106,7 @@ loginBtn.onclick = async () => {
   const password = document.getElementById("loginPassword").value.trim();
 
   if (!email || !password) {
+    authStatus.style.color = "#ff6b6b";
     authStatus.textContent = "Please enter both email and password.";
     return;
   }
@@ -106,30 +114,35 @@ loginBtn.onclick = async () => {
   authStatus.style.color = "#7ee1ff";
   authStatus.textContent = "Authenticating...";
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
-  if (error) {
-    handleFailedAttempt();
-  } else {
-    // Reset failed attempts on successful login
-    localStorage.removeItem(ATTEMPTS_KEY);
-    localStorage.removeItem(LOCK_KEY);
-    authStatus.textContent = "";
-    showAdminPanel();
+    if (error) {
+      // Show exact error message from Supabase
+      authStatus.style.color = "#ff6b6b";
+      authStatus.textContent = "Error: " + error.message;
+      handleFailedAttempt();
+    } else {
+      localStorage.removeItem(ATTEMPTS_KEY);
+      localStorage.removeItem(LOCK_KEY);
+      authStatus.textContent = "";
+      showAdminPanel();
+    }
+  } catch (err) {
+    authStatus.style.color = "#ff6b6b";
+    authStatus.textContent = "Connection error. Please check your credentials.";
   }
 };
 
-// Handle Lockout Logic (24h, 48h, 72h...)
 function handleFailedAttempt() {
   let failedAttempts = parseInt(localStorage.getItem(ATTEMPTS_KEY) || "0") + 1;
   localStorage.setItem(ATTEMPTS_KEY, failedAttempts);
 
-  // Lock duration in hours = 24 * failedAttempts
   const lockHours = 24 * failedAttempts;
   const lockUntil = Date.now() + (lockHours * 60 * 60 * 1000);
   localStorage.setItem(LOCK_KEY, lockUntil);
 
-  checkLockout();
+  setTimeout(checkLockout, 1000);
 }
 
 function checkLockout() {
@@ -155,7 +168,9 @@ function showAdminPanel() {
 }
 
 logoutBtn.onclick = async () => {
-  await supabaseClient.auth.signOut();
+  if (supabaseClient) {
+    await supabaseClient.auth.signOut();
+  }
   adminContent.style.display = "none";
   authSection.style.display = "block";
   logoutBtn.style.display = "none";
