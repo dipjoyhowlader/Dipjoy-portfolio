@@ -68,7 +68,7 @@
 // ==========================================
 const SUPABASE_URL = "https://mndaaidwihvfggqqxnld.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uZGFhaWR3aWh2ZmdncXF4bmxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3MTI3NzAsImV4cCI6MjEwNTI4ODc3MH0.Es5uOvT0GXpCC3kgiVepHBfN3wsS6GTigvwGo0rnyuw";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Lockout Tracking Variables
 const LOCK_KEY = "dh_admin_lockout_until";
@@ -85,7 +85,7 @@ const logoutBtn = document.getElementById("logoutBtn");
 checkLockout();
 
 // Check if user is already logged in
-supabase.auth.getSession().then(({ data: { session } }) => {
+supabaseClient.auth.getSession().then(({ data: { session } }) => {
   if (session) {
     showAdminPanel();
   }
@@ -106,7 +106,7 @@ loginBtn.onclick = async () => {
   authStatus.style.color = "#7ee1ff";
   authStatus.textContent = "Authenticating...";
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
   if (error) {
     handleFailedAttempt();
@@ -155,7 +155,7 @@ function showAdminPanel() {
 }
 
 logoutBtn.onclick = async () => {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   adminContent.style.display = "none";
   authSection.style.display = "block";
   logoutBtn.style.display = "none";
