@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Dipjoy Portfolio</title><link rel="stylesheet" href="styles.css">
+<script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
+</head>
+<body>
+<div class="bg-orb orb1"></div><div class="bg-orb orb2"></div><div class="noise"></div>
+<header class="nav"><a class="brand" href="index.html">DH<span>•</span></a><a class="back" href="index.html">← Portfolio</a></header>
+<main class="admin-main">
+  <div class="eyebrow">PRIVATE ADMIN AREA</div><h1>Upload a new <span>portfolio video.</span></h1>
+  <p class="muted">This page uploads the video to Cloudinary and generates a ready-to-paste portfolio entry. Keep this page private.</p>
+  <div class="panel">
+    <label>Cloudinary cloud name<input id="cloud" placeholder="e.g. dxxxxxxx"></label>
+    <label>Unsigned upload preset<input id="preset" placeholder="e.g. dipjoy_portfolio"></label>
+    <label>Category<select id="cat"><option value="youtube">YouTube / Documentary / Infographics</option><option value="motion">Motion Graphics</option><option value="saas">SaaS Animation</option><option value="ads">Advertisement</option></select></label>
+    <label>Project title<input id="projectTitle" placeholder="e.g. AI Revolution — Documentary"></label>
+    <label>Short description<input id="projectDesc" placeholder="Storytelling • B-roll • Infographics • Sound Design"></label>
+    <button class="primary" id="uploadBtn">Upload video</button>
+    <div id="status" class="status"></div>
+  </div>
+  <div class="panel"><h2>After upload</h2><p class="muted">Copy the generated JSON entry below and paste it into <code>videos.json</code>. Push the updated file to GitHub. The video will then appear on the selected category page.</p><textarea id="output" readonly placeholder="Your JSON entry will appear here…"></textarea></div>
+  <div class="note"><strong>Security:</strong> use an unsigned preset with strict limits (video only, sensible max size, no overwrite). For a public production upload system, use signed uploads and authentication.</div>
+</main>
+<script>
+const savedCloud=localStorage.getItem("dh_cloud"); const savedPreset=localStorage.getItem("dh_preset");
+if(savedCloud) cloud.value=savedCloud; if(savedPreset) preset.value=savedPreset;
+uploadBtn.onclick=()=>{
+ const cloudName=cloud.value.trim(), uploadPreset=preset.value.trim();
+ localStorage.setItem("dh_cloud",cloudName); localStorage.setItem("dh_preset",uploadPreset);
+ if(!cloudName||!uploadPreset||!projectTitle.value.trim()){status.textContent="Please enter cloud name, preset and project title.";return;}
+ const widget=cloudinary.createUploadWidget({
+   cloudName, uploadPreset, sources:["local"], multiple:false, resourceType:"video",
+   clientAllowedFormats:["mp4","webm","mov"], maxFileSize:300000000,
+   folder:"dipjoy-portfolio"
+ }, (error,result)=>{
+   if(error){status.textContent="Upload error: "+(error.statusText||error.message||"Please check your settings.");return;}
+   if(result && result.event==="success"){
+     const cat=document.getElementById("cat").value;
+     const entry={id:"v_"+Date.now(),category:cat,title:projectTitle.value.trim(),description:projectDesc.value.trim(),url:result.info.secure_url,thumbnail:result.info.thumbnail_url||""};
+     output.value=JSON.stringify(entry,null,2);
+     status.textContent="Upload complete. Copy the JSON entry into videos.json.";
+   }
+ });
+ widget.open();
+};
+</script>
+</body></html>
