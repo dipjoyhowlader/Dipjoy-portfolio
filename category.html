@@ -12,5 +12,62 @@
   <div class="video-grid" id="videos"></div>
   <section class="cta"><div><div class="eyebrow">HAVE A PROJECT?</div><h2>Let's make something<br><span>worth watching.</span></h2></div><a class="cta-btn" href="mailto:dipjoyhowlader2012@gmail.com?subject=Video%20Editing%20Project">dipjoyhowlader2012@gmail.com <b>↗</b></a></section>
 </main>
-<script src="app.js"></script>
+
+<script>
+// Category mapping details
+const CATEGORIES = {
+  youtube: { kicker: "YOUTUBE & INFOGRAPHICS", title: "YouTube / Documentary / Infographics", desc: "Story-driven edits, documentaries, explainers and information-rich visuals." },
+  motion: { kicker: "2D & 3D MOTION", title: "Motion Graphics", desc: "Kinetic typography, logo animation, lower thirds and dynamic visual accents." },
+  saas: { kicker: "PRODUCT DEMOS", title: "SaaS Animation", desc: "Clean UI walkthroughs, feature breakdowns and high-converting software promos." },
+  ads: { kicker: "COMMERCIAL", title: "Advertisement", desc: "High-impact social ads, short-form promos and brand-focused campaign videos." }
+};
+
+async function loadCategoryVideos() {
+  const params = new URLSearchParams(window.location.search);
+  const catKey = params.get("cat") || "youtube";
+  const catInfo = CATEGORIES[catKey] || CATEGORIES.youtube;
+
+  // Set Headers
+  document.getElementById("kicker").textContent = catInfo.kicker;
+  document.getElementById("title").textContent = catInfo.title;
+  document.getElementById("desc").textContent = catInfo.desc;
+
+  const container = document.getElementById("videos");
+
+  try {
+    // Cache bypass using Date.now()
+    const res = await fetch("videos.json?v=" + Date.now());
+    const data = await res.json();
+    const list = data.filter(v => v.category === catKey);
+
+    if (list.length === 0) {
+      container.innerHTML = `
+        <div class="panel" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+          <div class="eyebrow">CURATING THIS COLLECTION</div>
+          <h2 style="margin: 10px 0;">Your next great project will appear here.</h2>
+          <p class="muted">Add videos from the Admin page and paste their entries into videos.json.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = list.map(v => `
+      <div class="card">
+        <div class="video-wrap">
+          <video src="${v.url}" controls poster="${v.thumbnail || ''}" preload="metadata"></video>
+        </div>
+        <div class="card-body">
+          <h3>${v.title}</h3>
+          <p class="muted">${v.description}</p>
+        </div>
+      </div>
+    `).join("");
+
+  } catch (err) {
+    console.error("Error loading videos:", err);
+    container.innerHTML = `<p style="color:#ff6b6b; grid-column:1/-1;">Failed to load videos. Please check videos.json syntax.</p>`;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadCategoryVideos);
+</script>
 </body></html>
