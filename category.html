@@ -1,10 +1,12 @@
 <!doctype html> 
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Portfolio Category — Dipjoy Howlader</title><link rel="stylesheet" href="styles.css">
-</head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portfolio Category — Dipjoy Howlader</title>
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
 <body>
 <div class="bg-orb orb1"></div><div class="bg-orb orb2"></div><div class="noise"></div>
 <header class="nav"><a class="brand" href="index.html">DH<span>•</span></a><a class="back" href="index.html">← All work</a></header>
@@ -51,17 +53,24 @@ async function loadCategoryVideos() {
       return;
     }
 
-    container.innerHTML = list.map(v => `
-      <div class="card">
-        <div class="video-wrap">
-          <video src="${v.url}" controls poster="${v.thumbnail || ''}" preload="metadata"></video>
+    container.innerHTML = list.map(v => {
+      // Automatic Cloudinary Optimization for smooth mobile playback
+      const optimizedUrl = v.url.includes('/upload/') 
+        ? v.url.replace('/upload/', '/upload/f_auto,q_auto/') 
+        : v.url;
+
+      return `
+        <div class="card">
+          <div class="video-wrap">
+            <video src="${optimizedUrl}" controls poster="${v.thumbnail || ''}" preload="metadata"></video>
+          </div>
+          <div class="card-body">
+            <h3>${v.title}</h3>
+            <p class="muted">${v.description}</p>
+          </div>
         </div>
-        <div class="card-body">
-          <h3>${v.title}</h3>
-          <p class="muted">${v.description}</p>
-        </div>
-      </div>
-    `).join("");
+      `;
+    }).join("");
 
   } catch (err) {
     console.error("Error loading videos:", err);
